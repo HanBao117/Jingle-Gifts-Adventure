@@ -38,14 +38,39 @@ let dropEvent;
 let soundLife;   
 let soundHit;    
 
-const phoneAvatarMapping = {
-    "1": "avatar_child1", "2": "avatar_child2", "3": "avatar_child3",
-    "4": "avatar_child4", "5": "avatar_child5", "6": "avatar_child6",
-    "7": "avatar_child7", "8": "avatar_child8", "9": "avatar_child9",
-    "10": "avatar_child10", "11": "avatar_child11", "12": "avatar_child12",
-    "13": "avatar_child13", "14": "avatar_child14",
-    "15": "avatar_child15", "16": "avatar_child16"
+// 孩子和父母手机号映射数据
+// 每个child对应一个数组存父母电话，有的只有一个
+const childPhones = {
+    1:  ["021776930", "0277273017"],
+    2:  ["0273472347", "0273461680"],
+    3:  ["0224708531", "0225174947"],
+    4:  ["0211063718", "0212222283"],
+    5:  ["021939511", "021850302"],
+    6:  ["xxxxxxxx", "xxxxxxx"],
+    7:  ["0274062391", "0223458748"],
+    8:  ["021657576", "0210782358"],
+    9:  ["xxxxxxx1", "xxxxxxxx11"],
+    10: ["xxxxxxxx2", "xxxxxxxx22"],
+    11:["021723726", "0274572676"],
+    12:["0212408006","0211231711"],
+    13:["02041895031","02108150046"],
+    14:["0225340336","0225365126"],
+    15:["0276128748"],
+    16:["xxxxxxxx3","xxxxxxxx33"]
 };
+
+// 创建手机号到child的反向映射
+const phoneToChild = {};
+for (let c = 1; c <= 16; c++) {
+    let phones = childPhones[c];
+    phones.forEach(p => {
+        if (p && p.trim() !== 'xxxxxxxx' && p.trim() !== 'xxxxxxx' && p.trim() !== 'xxxxxxxx1' && p.trim() !== 'xxxxxxxx11' && p.trim() !== 'xxxxxxxx2' && p.trim() !== 'xxxxxxxx22' && p.trim() !== 'xxxxxxxx3' && p.trim() !== 'xxxxxxxx33') {
+            phoneToChild[p] = c;
+        }
+    });
+}
+
+// 如果用户输入的号码可能包含无效的 'xxxxxxxx'也无所谓，不匹配就报错即可。
 
 const giftTypes = ['gift1', 'gift2', 'gift3', 'gift4', 'gift5', 'gift6', 'gift7', 'gift8', 'gift9', 'gift10'];
 const poopTypes = ['poop1', 'poop2', 'poop3', 'poop4'];
@@ -79,20 +104,17 @@ function create() {
     this.scale.pageAlignHorizontally = true;
     this.scale.pageAlignVertically = true;
 
-    // 视频全屏后缩小30%（即70%大小）
     const video = this.add.video(screenWidth / 2, screenHeight / 2, 'snowvideo');
     video.setOrigin(0.5);
-    video.setDisplaySize(screenWidth * 0.7, screenHeight * 0.7);
+    video.setDisplaySize(screenWidth * 0.55, screenHeight * 0.32);
     video.play(true);
     video.setDepth(-10);
 
     body = this.physics.add.sprite(screenWidth / 2, screenHeight - 150, 'santa_body');
-    body.setScale(0.2); // 原0.4一半
+    body.setScale(0.2); 
     body.setCollideWorldBounds(true);
     body.visible = false;
 
-    // 默认头像缩放0.15（原0.3一半）
-    // 默认偏移-30（原-60一半）
     head = this.add.sprite(body.x, body.y - 30, 'santa_head');
     head.setScale(0.15); 
     head.setOrigin(0.5, 0.6);
@@ -131,21 +153,17 @@ function update() {
 
     if (currentPlayer) {
         if (currentPlayer.avatar === 'avatar_child15') {
-            // child15原-25 -> -12
-            head.y = body.y - 12;
+            head.y = body.y - 12; 
             head.setScale(0.15); 
             head.setOrigin(0.5, 0.6);
             head.setTexture('avatar_child15');
         } else if (currentPlayer.avatar === 'avatar_child16') {
-            // child16原-60 -> -30
-            // 16的头没缩小问题已解决: 同样缩小到0.15
-            head.y = body.y - 30;
+            head.y = body.y - 30; 
             head.setScale(0.15); 
             head.setOrigin(0.5, 0.8);
             head.setTexture('avatar_child16');
         } else {
-            // 普通情况 -60 -> -30
-            head.y = body.y - 30;
+            head.y = body.y - 30; 
             head.setScale(0.15); 
             head.setOrigin(0.5, 0.75);
             head.setTexture(currentPlayer.avatar);
@@ -189,11 +207,11 @@ function showGameIntroduction() {
     introDiv.style.textAlign = 'center';
 
     const title = document.createElement('h2');
-    title.textContent = '🎅 Welcome to Santa’s Adventure! 🎄';
+    title.textContent = '🎅 Welcome to the Children’s Christmas Adventure! 🎄';
     introDiv.appendChild(title);
 
     const rules = document.createElement('p');
-    rules.textContent = 'Help Santa survive 60 seconds! Gifts fall from the sky. Poop falls too, and gets more dangerous. Good luck!';
+    rules.textContent = 'Collect gifts while avoiding poop 💩!';
     rules.style.marginBottom = '30px';
     introDiv.appendChild(rules);
 
@@ -206,6 +224,7 @@ function showGameIntroduction() {
     startButton.style.border = 'none';
     startButton.style.borderRadius = '5px';
     startButton.style.cursor = 'pointer';
+    startButton.style.marginTop = '200px'; // 下移200像素
 
     startButton.addEventListener('click', () => {
         document.body.removeChild(introDiv);
@@ -229,19 +248,25 @@ function promptPlayerLogin() {
     loginDiv.style.zIndex = '1000';
 
     const loginTitle = document.createElement('h3');
-    loginTitle.textContent = 'Enter Player Number (1-16)';
+    loginTitle.textContent = 'Enter parent’s phone number or player number (1-16)';
     loginDiv.appendChild(loginTitle);
 
     const input = document.createElement('input');
     input.type = 'text';
-    input.placeholder = 'Player Number';
+    input.placeholder = 'Phone number or 1-16';
     input.style.display = 'block';
     input.style.marginTop = '10px';
     loginDiv.appendChild(input);
 
+    const errorText = document.createElement('p');
+    errorText.style.color = 'red';
+    errorText.style.display = 'none';
+    errorText.textContent = 'Invalid input. Please enter a valid phone number or a number between 1 and 16.';
+    loginDiv.appendChild(errorText);
+
     const submitButton = document.createElement('button');
     submitButton.textContent = 'Confirm';
-    submitButton.style.marginTop = '20px';
+    submitButton.style.marginTop = '120px'; // 下移120像素
     submitButton.style.padding = '10px 20px';
     submitButton.style.fontSize = '16px';
     submitButton.style.backgroundColor = '#007bff';
@@ -251,11 +276,28 @@ function promptPlayerLogin() {
     submitButton.style.cursor = 'pointer';
 
     submitButton.addEventListener('click', () => {
-        const playerNumber = input.value.trim();
-        if (phoneAvatarMapping[playerNumber]) {
-            currentPlayer = { playerNumber, avatar: phoneAvatarMapping[playerNumber] };
+        const val = input.value.trim();
+        let childNum = null;
+        if (/^\d+$/.test(val)) {
+            // 输入为数字
+            const num = parseInt(val,10);
+            if (num >=1 && num <=16) {
+                childNum = num;
+            }
+        }
+        if (childNum === null) {
+            // 尝试匹配电话
+            if (phoneToChild[val]) {
+                childNum = phoneToChild[val];
+            }
+        }
+
+        if (childNum) {
+            currentPlayer = { playerNumber: childNum, avatar: `avatar_child${childNum}` };
             document.body.removeChild(loginDiv);
             startGame();
+        } else {
+            errorText.style.display = 'block';
         }
     });
     loginDiv.appendChild(submitButton);
@@ -315,7 +357,7 @@ function dropItems() {
         if (isGift) {
             const giftType = giftTypes[Phaser.Math.Between(0, giftTypes.length - 1)];
             const gift = gifts.create(x, spawnY, giftType);
-            gift.setScale(0.15); // 所有礼物减半
+            gift.setScale(0.15); 
             gift.setVelocityY(100);
         } else {
             let possiblePoops = [];
@@ -336,7 +378,7 @@ function dropItems() {
 
             const poopType = possiblePoops[Phaser.Math.Between(0, possiblePoops.length - 1)];
             const poop = obstacles.create(x, spawnY, poopType);
-            poop.setScale(0.05); // 障碍物也减半
+            poop.setScale(0.05); 
             poop.setVelocityY(speedY);
 
             if (poopType === 'poop4') {
