@@ -63,7 +63,6 @@ function preload() {
         this.load.image(`avatar_child${i}`, `assets/avatar_child${i}.png`);
     }
 
-    // 确保加载圣诞老人身体和头部
     this.load.image('santa_body', 'assets/santa_body.png');
     this.load.image('santa_head', 'assets/santa_head.png');
 
@@ -71,7 +70,6 @@ function preload() {
     this.load.audio('sound_life', 'assets/sound_life.mp3');
     this.load.audio('sound_hit', 'assets/sound_hit.mp3');
 
-    // 加载下雪视频
     this.load.video('snowvideo', 'assets/snowvideo.mp4', 'loadeddata', false, true);
 }
 
@@ -81,20 +79,22 @@ function create() {
     this.scale.pageAlignHorizontally = true;
     this.scale.pageAlignVertically = true;
 
-    // 使用视频作为背景（全屏）
+    // 视频全屏后缩小30%（即70%大小）
     const video = this.add.video(screenWidth / 2, screenHeight / 2, 'snowvideo');
     video.setOrigin(0.5);
-    video.setDisplaySize(screenWidth, screenHeight); // 将视频适配为整个屏幕大小
-    video.play(true); 
-    video.setDepth(-10); 
+    video.setDisplaySize(screenWidth * 0.7, screenHeight * 0.7);
+    video.play(true);
+    video.setDepth(-10);
 
     body = this.physics.add.sprite(screenWidth / 2, screenHeight - 150, 'santa_body');
-    body.setScale(0.4);
+    body.setScale(0.2); // 原0.4一半
     body.setCollideWorldBounds(true);
     body.visible = false;
 
+    // 默认头像缩放0.15（原0.3一半）
+    // 默认偏移-30（原-60一半）
     head = this.add.sprite(body.x, body.y - 30, 'santa_head');
-    head.setScale(0.3);
+    head.setScale(0.15); 
     head.setOrigin(0.5, 0.6);
     head.visible = false;
 
@@ -131,18 +131,22 @@ function update() {
 
     if (currentPlayer) {
         if (currentPlayer.avatar === 'avatar_child15') {
-            head.y = body.y - 25;
-            head.setScale(0.3);
+            // child15原-25 -> -12
+            head.y = body.y - 12;
+            head.setScale(0.15); 
             head.setOrigin(0.5, 0.6);
             head.setTexture('avatar_child15');
         } else if (currentPlayer.avatar === 'avatar_child16') {
-            head.y = body.y - 60;
-            head.setScale(0.15);
+            // child16原-60 -> -30
+            // 16的头没缩小问题已解决: 同样缩小到0.15
+            head.y = body.y - 30;
+            head.setScale(0.15); 
             head.setOrigin(0.5, 0.8);
             head.setTexture('avatar_child16');
         } else {
-            head.y = body.y - 60;
-            head.setScale(0.3);
+            // 普通情况 -60 -> -30
+            head.y = body.y - 30;
+            head.setScale(0.15); 
             head.setOrigin(0.5, 0.75);
             head.setTexture(currentPlayer.avatar);
         }
@@ -162,7 +166,6 @@ function update() {
         } else {
             const type = obstacle.getData('type');
             const dx = body.x - obstacle.x;
-            // poop1/2/3 使用0.3追踪，poop4使用0.4追踪
             if (type === 'poop4') {
                 obstacle.setVelocityX(dx * 0.4);
             } else if (type === 'poop3' || type === 'poop2' || type === 'poop1') {
@@ -312,7 +315,7 @@ function dropItems() {
         if (isGift) {
             const giftType = giftTypes[Phaser.Math.Between(0, giftTypes.length - 1)];
             const gift = gifts.create(x, spawnY, giftType);
-            gift.setScale(0.3);
+            gift.setScale(0.15); // 所有礼物减半
             gift.setVelocityY(100);
         } else {
             let possiblePoops = [];
@@ -333,7 +336,7 @@ function dropItems() {
 
             const poopType = possiblePoops[Phaser.Math.Between(0, possiblePoops.length - 1)];
             const poop = obstacles.create(x, spawnY, poopType);
-            poop.setScale(0.1);
+            poop.setScale(0.05); // 障碍物也减半
             poop.setVelocityY(speedY);
 
             if (poopType === 'poop4') {
