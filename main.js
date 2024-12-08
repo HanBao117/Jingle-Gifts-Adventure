@@ -38,8 +38,7 @@ let dropEvent;
 let soundLife;   
 let soundHit;    
 
-// 孩子和父母手机号映射数据
-// 每个child对应一个数组存父母电话，有的只有一个
+// 根据你的数据映射
 const childPhones = {
     1:  ["021776930", "0277273017"],
     2:  ["0273472347", "0273461680"],
@@ -59,18 +58,15 @@ const childPhones = {
     16:["xxxxxxxx3","xxxxxxxx33"]
 };
 
-// 创建手机号到child的反向映射
 const phoneToChild = {};
 for (let c = 1; c <= 16; c++) {
     let phones = childPhones[c];
     phones.forEach(p => {
-        if (p && p.trim() !== 'xxxxxxxx' && p.trim() !== 'xxxxxxx' && p.trim() !== 'xxxxxxxx1' && p.trim() !== 'xxxxxxxx11' && p.trim() !== 'xxxxxxxx2' && p.trim() !== 'xxxxxxxx22' && p.trim() !== 'xxxxxxxx3' && p.trim() !== 'xxxxxxxx33') {
+        if (p && p.trim() !== '' && !p.includes('xxxxxxx')) {
             phoneToChild[p] = c;
         }
     });
 }
-
-// 如果用户输入的号码可能包含无效的 'xxxxxxxx'也无所谓，不匹配就报错即可。
 
 const giftTypes = ['gift1', 'gift2', 'gift3', 'gift4', 'gift5', 'gift6', 'gift7', 'gift8', 'gift9', 'gift10'];
 const poopTypes = ['poop1', 'poop2', 'poop3', 'poop4'];
@@ -110,13 +106,15 @@ function create() {
     video.play(true);
     video.setDepth(-10);
 
+    // 身体由0.2变0.3
     body = this.physics.add.sprite(screenWidth / 2, screenHeight - 150, 'santa_body');
-    body.setScale(0.2); 
+    body.setScale(0.3); 
     body.setCollideWorldBounds(true);
     body.visible = false;
 
+    // 默认头部0.15变0.225，child16保持0.15
     head = this.add.sprite(body.x, body.y - 30, 'santa_head');
-    head.setScale(0.15); 
+    head.setScale(0.225); 
     head.setOrigin(0.5, 0.6);
     head.visible = false;
 
@@ -153,18 +151,18 @@ function update() {
 
     if (currentPlayer) {
         if (currentPlayer.avatar === 'avatar_child15') {
-            head.y = body.y - 12; 
-            head.setScale(0.15); 
+            head.y = body.y - 12;
+            head.setScale(0.225); 
             head.setOrigin(0.5, 0.6);
             head.setTexture('avatar_child15');
         } else if (currentPlayer.avatar === 'avatar_child16') {
-            head.y = body.y - 30; 
-            head.setScale(0.15); 
+            head.y = body.y - 30;
+            head.setScale(0.15); // 保持不变
             head.setOrigin(0.5, 0.8);
             head.setTexture('avatar_child16');
         } else {
-            head.y = body.y - 30; 
-            head.setScale(0.15); 
+            head.y = body.y - 30;
+            head.setScale(0.225); 
             head.setOrigin(0.5, 0.75);
             head.setTexture(currentPlayer.avatar);
         }
@@ -211,7 +209,8 @@ function showGameIntroduction() {
     introDiv.appendChild(title);
 
     const rules = document.createElement('p');
-    rules.textContent = 'Collect gifts while avoiding poop 💩!';
+    // 这里替换为你要求的英文说明
+    rules.textContent = 'Collect gifts while avoiding poop 💩! Use touch to move left and right. Catch gifts to increase life. Avoid poop and see how long you can last!';
     rules.style.marginBottom = '30px';
     introDiv.appendChild(rules);
 
@@ -224,7 +223,7 @@ function showGameIntroduction() {
     startButton.style.border = 'none';
     startButton.style.borderRadius = '5px';
     startButton.style.cursor = 'pointer';
-    startButton.style.marginTop = '200px'; // 下移200像素
+    startButton.style.marginTop = '200px'; 
 
     startButton.addEventListener('click', () => {
         document.body.removeChild(introDiv);
@@ -266,7 +265,7 @@ function promptPlayerLogin() {
 
     const submitButton = document.createElement('button');
     submitButton.textContent = 'Confirm';
-    submitButton.style.marginTop = '120px'; // 下移120像素
+    submitButton.style.marginTop = '120px'; 
     submitButton.style.padding = '10px 20px';
     submitButton.style.fontSize = '16px';
     submitButton.style.backgroundColor = '#007bff';
@@ -279,14 +278,12 @@ function promptPlayerLogin() {
         const val = input.value.trim();
         let childNum = null;
         if (/^\d+$/.test(val)) {
-            // 输入为数字
             const num = parseInt(val,10);
             if (num >=1 && num <=16) {
                 childNum = num;
             }
         }
         if (childNum === null) {
-            // 尝试匹配电话
             if (phoneToChild[val]) {
                 childNum = phoneToChild[val];
             }
@@ -356,8 +353,9 @@ function dropItems() {
 
         if (isGift) {
             const giftType = giftTypes[Phaser.Math.Between(0, giftTypes.length - 1)];
+            // 礼物0.15变0.225
             const gift = gifts.create(x, spawnY, giftType);
-            gift.setScale(0.15); 
+            gift.setScale(0.225); 
             gift.setVelocityY(100);
         } else {
             let possiblePoops = [];
@@ -377,6 +375,7 @@ function dropItems() {
             }
 
             const poopType = possiblePoops[Phaser.Math.Between(0, possiblePoops.length - 1)];
+            // poop保持0.05不变
             const poop = obstacles.create(x, spawnY, poopType);
             poop.setScale(0.05); 
             poop.setVelocityY(speedY);
