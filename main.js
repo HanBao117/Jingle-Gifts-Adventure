@@ -27,7 +27,7 @@ let body, head, gifts, obstacles, lifeText, timerText, backgroundMusic, currentP
 let score = 0;
 let lives = 3;
 let gameStarted = false;
-let countdown = 60;
+let countdown = 80; 
 let headRotationSpeed = 0.005;
 let headRotationAmplitude = 0.4;
 let targetX = screenWidth / 2;
@@ -37,8 +37,9 @@ let dropEvent;
 
 let soundLife;   
 let soundHit;    
+let soundCheer; // 喝彩音效
 
-// 根据你的数据映射
+// 孩子与父母手机号数据
 const childPhones = {
     1:  ["021776930", "0277273017"],
     2:  ["0273472347", "0273461680"],
@@ -90,6 +91,8 @@ function preload() {
     this.load.audio('bg_music', 'assets/background_music.mp3');
     this.load.audio('sound_life', 'assets/sound_life.mp3');
     this.load.audio('sound_hit', 'assets/sound_hit.mp3');
+    // 新增喝彩音效
+    this.load.audio('sound_cheer', 'assets/sound_cheer.mp3');
 
     this.load.video('snowvideo', 'assets/snowvideo.mp4', 'loadeddata', false, true);
 }
@@ -106,13 +109,11 @@ function create() {
     video.play(true);
     video.setDepth(-10);
 
-    // 身体由0.2变0.3
     body = this.physics.add.sprite(screenWidth / 2, screenHeight - 150, 'santa_body');
     body.setScale(0.3); 
     body.setCollideWorldBounds(true);
     body.visible = false;
 
-    // 默认头部0.15变0.225，child16保持0.15
     head = this.add.sprite(body.x, body.y - 30, 'santa_head');
     head.setScale(0.225); 
     head.setOrigin(0.5, 0.6);
@@ -134,10 +135,15 @@ function create() {
     soundLife.setVolume(0.5);
     soundHit = this.sound.add('sound_hit');
     soundHit.setVolume(0.5);
+    soundCheer = this.sound.add('sound_cheer'); // 创建喝彩音效对象
 
     this.input.on('pointermove', (pointer) => {
         targetX = Phaser.Math.Clamp(pointer.x, 50, screenWidth - 50);
     });
+
+    // 在规则页面显示之前先隐藏血量与倒计时
+    lifeText.setVisible(false);
+    timerText.setVisible(false);
 
     showGameIntroduction();
 }
@@ -157,9 +163,15 @@ function update() {
             head.setTexture('avatar_child15');
         } else if (currentPlayer.avatar === 'avatar_child16') {
             head.y = body.y - 30;
-            head.setScale(0.15); // 保持不变
+            head.setScale(0.15); 
             head.setOrigin(0.5, 0.8);
             head.setTexture('avatar_child16');
+        } else if (currentPlayer.avatar === 'avatar_child1') {
+            head.y = body.y - 30;
+            head.setScale(0.225); 
+            head.setOrigin(0.5, 0.75);
+            head.setTexture('avatar_child1');
+            head.x = body.x - 5; // 左移5像素
         } else {
             head.y = body.y - 30;
             head.setScale(0.225); 
@@ -184,7 +196,7 @@ function update() {
             const dx = body.x - obstacle.x;
             if (type === 'poop4') {
                 obstacle.setVelocityX(dx * 0.4);
-            } else if (type === 'poop3' || type === 'poop2' || type === 'poop1') {
+            } else {
                 obstacle.setVelocityX(dx * 0.3);
             }
         }
@@ -209,7 +221,6 @@ function showGameIntroduction() {
     introDiv.appendChild(title);
 
     const rules = document.createElement('p');
-    // 这里替换为你要求的英文说明
     rules.textContent = 'Collect gifts while avoiding poop 💩! Use touch to move left and right. Catch gifts to increase life. Avoid poop and see how long you can last!';
     rules.style.marginBottom = '30px';
     introDiv.appendChild(rules);
@@ -247,12 +258,12 @@ function promptPlayerLogin() {
     loginDiv.style.zIndex = '1000';
 
     const loginTitle = document.createElement('h3');
-    loginTitle.textContent = 'Enter parent’s phone number or player number (1-16)';
+    loginTitle.textContent = 'Please enter your phone number';
     loginDiv.appendChild(loginTitle);
 
     const input = document.createElement('input');
     input.type = 'text';
-    input.placeholder = 'Phone number or 1-16';
+    input.placeholder = 'Enter your phone number';
     input.style.display = 'block';
     input.style.marginTop = '10px';
     loginDiv.appendChild(input);
@@ -305,10 +316,13 @@ function promptPlayerLogin() {
 function startGame() {
     score = 0;
     lives = 3;
-    countdown = 60;
+    countdown = 80; 
     lifeText.setText('❤️❤️❤️');
     timerText.setText(`Time: ${countdown}`);
     gameStarted = true;
+
+    lifeText.setVisible(true);
+    timerText.setVisible(true);
 
     body.visible = true;
     head.visible = true;
@@ -375,7 +389,7 @@ function dropItems() {
             }
 
             const poopType = possiblePoops[Phaser.Math.Between(0, possiblePoops.length - 1)];
-            // poop保持0.05不变
+            // poop保持0.05
             const poop = obstacles.create(x, spawnY, poopType);
             poop.setScale(0.05); 
             poop.setVelocityY(speedY);
@@ -427,21 +441,44 @@ function endGame(result) {
     if (countdownEvent) countdownEvent.remove();
     if (dropEvent) dropEvent.remove();
 
-    const resultText = (result === 'win') ? 'YOU WIN!' : 'Game Over!';
+    const resultText = (result === 'win') ? 'YOU WIN!' : 'GAME OVER!';
     const resultColor = (result === 'win') ? '#28a745' : '#dc3545';
 
+    // 胜利时播放孩子喝彩声
+    if (result === 'win') {
+        soundCheer.play();
+    }
+
     const resultDisplay = scene.add.text(screenWidth / 2, screenHeight / 2, resultText, {
-        fontSize: '64px',
-        fill: resultColor
+        fontFamily: 'Arial',
+        fontSize: '80px',
+        fontStyle: 'bold',
+        color: resultColor,
+        align: 'center'
     }).setOrigin(0.5);
 
-    const buttonText = (result === 'win') ? 'Restart' : 'Try Again';
-    const restartButton = scene.add.text(screenWidth / 2, screenHeight / 2 + 100, buttonText, {
-        fontSize: '32px',
-        fill: '#fff',
+    const buttonText = (result === 'win') ? 'RESTART' : 'TRY AGAIN';
+    const restartButton = scene.add.text(screenWidth / 2, screenHeight / 2 + 150, buttonText, {
+        fontFamily: 'Arial',
+        fontSize: '48px',
+        fontStyle: 'bold',
+        color: '#ffffff',
         backgroundColor: '#007bff',
-        padding: { x: 20, y: 10 }
+        padding: { x: 30, y: 20 },
+        align: 'center'
     }).setOrigin(0.5).setInteractive();
+
+    restartButton.setStyle({
+        shadow: { offsetX: 2, offsetY: 2, color: '#000', blur: 4, stroke: false, fill: true }
+    });
+
+    restartButton.on('pointerover', () => {
+        restartButton.setStyle({ backgroundColor: '#0056b3' });
+    });
+
+    restartButton.on('pointerout', () => {
+        restartButton.setStyle({ backgroundColor: '#007bff' });
+    });
 
     restartButton.on('pointerdown', () => {
         restartButton.destroy();
