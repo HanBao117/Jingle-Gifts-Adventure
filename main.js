@@ -27,7 +27,7 @@ let body, head, gifts, obstacles, lifeText, timerText, backgroundMusic, currentP
 let score = 0;
 let lives = 3;
 let gameStarted = false;
-let countdown = 80; 
+let countdown = 80; // 游戏时长80秒
 let headRotationSpeed = 0.005;
 let headRotationAmplitude = 0.4;
 let targetX = screenWidth / 2;
@@ -39,28 +39,30 @@ let soundLife;
 let soundHit;    
 let soundCheer; // 喝彩音效
 
-// 孩子与父母手机号数据
+// 孩子与父母手机号数据，包括新增的child17
 const childPhones = {
     1:  ["021776930", "0277273017"],
     2:  ["0273472347", "0273461680"],
     3:  ["0224708531", "0225174947"],
     4:  ["0211063718", "0212222283"],
     5:  ["021939511", "021850302"],
-    6:  ["xxxxxxxx", "xxxxxxx"],
+    6:  ["0226040965", "0220800826"],
     7:  ["0274062391", "0223458748"],
     8:  ["021657576", "0210782358"],
-    9:  ["xxxxxxx1", "xxxxxxxx11"],
-    10: ["xxxxxxxx2", "xxxxxxxx22"],
+    9:  ["021688263", "021343484"],
+    10: ["02041907424", "02041826299"],
     11:["021723726", "0274572676"],
     12:["0212408006","0211231711"],
     13:["02041895031","02108150046"],
     14:["0225340336","0225365126"],
     15:["0276128748"],
-    16:["xxxxxxxx3","xxxxxxxx33"]
+    16:["02102700423","0210379288"],
+    17:["02102606249","0212316167"] // 新增的child17，替换为实际号码
 };
 
+// 创建父母手机号到孩子编号的映射
 const phoneToChild = {};
-for (let c = 1; c <= 16; c++) {
+for (let c = 1; c <= 17; c++) { // 更新循环到17
     let phones = childPhones[c];
     phones.forEach(p => {
         if (p && p.trim() !== '' && !p.includes('xxxxxxx')) {
@@ -81,7 +83,7 @@ function preload() {
         this.load.image(poop, `assets/${poop}.png`);
     });
 
-    for (let i = 1; i <= 16; i++) {
+    for (let i = 1; i <= 17; i++) { // 更新循环到17
         this.load.image(`avatar_child${i}`, `assets/avatar_child${i}.png`);
     }
 
@@ -109,11 +111,14 @@ function create() {
     video.play(true);
     video.setDepth(-10);
 
+    // 身体由0.2 -> 0.3（1.5倍）
     body = this.physics.add.sprite(screenWidth / 2, screenHeight - 150, 'santa_body');
     body.setScale(0.3); 
     body.setCollideWorldBounds(true);
     body.visible = false;
 
+    // 头部普通0.15 -> 0.225（1.5倍）
+    // child16保持0.15不变
     head = this.add.sprite(body.x, body.y - 30, 'santa_head');
     head.setScale(0.225); 
     head.setOrigin(0.5, 0.6);
@@ -163,15 +168,24 @@ function update() {
             head.setTexture('avatar_child15');
         } else if (currentPlayer.avatar === 'avatar_child16') {
             head.y = body.y - 30;
-            head.setScale(0.15); 
+            head.setScale(0.15);  //保持不变
             head.setOrigin(0.5, 0.8);
             head.setTexture('avatar_child16');
         } else if (currentPlayer.avatar === 'avatar_child1') {
+            // 孩子1头稍微左移5像素
             head.y = body.y - 30;
             head.setScale(0.225); 
             head.setOrigin(0.5, 0.75);
             head.setTexture('avatar_child1');
             head.x = body.x - 5; // 左移5像素
+        } else if (currentPlayer.avatar === 'avatar_child17') {
+            // 如果child17需要特殊处理，可以在这里添加
+            head.y = body.y - 30;
+            head.setScale(0.225); 
+            head.setOrigin(0.5, 0.75);
+            head.setTexture('avatar_child17');
+            // 如果需要左移或右移，可以调整head.x
+            // head.x = body.x + someOffset;
         } else {
             head.y = body.y - 30;
             head.setScale(0.225); 
@@ -271,7 +285,7 @@ function promptPlayerLogin() {
     const errorText = document.createElement('p');
     errorText.style.color = 'red';
     errorText.style.display = 'none';
-    errorText.textContent = 'Invalid input. Please enter a valid phone number or a number between 1 and 16.';
+    errorText.textContent = 'Invalid input. Please enter a valid phone number or a number between 1 and 17.';
     loginDiv.appendChild(errorText);
 
     const submitButton = document.createElement('button');
@@ -290,7 +304,7 @@ function promptPlayerLogin() {
         let childNum = null;
         if (/^\d+$/.test(val)) {
             const num = parseInt(val,10);
-            if (num >=1 && num <=16) {
+            if (num >=1 && num <=17) { // 更新范围到17
                 childNum = num;
             }
         }
@@ -316,11 +330,12 @@ function promptPlayerLogin() {
 function startGame() {
     score = 0;
     lives = 3;
-    countdown = 80; 
+    countdown = 80; // 80秒
     lifeText.setText('❤️❤️❤️');
     timerText.setText(`Time: ${countdown}`);
     gameStarted = true;
 
+    // 游戏开始时再显示血量和倒计时
     lifeText.setVisible(true);
     timerText.setVisible(true);
 
@@ -367,7 +382,7 @@ function dropItems() {
 
         if (isGift) {
             const giftType = giftTypes[Phaser.Math.Between(0, giftTypes.length - 1)];
-            // 礼物0.15变0.225
+            // 礼物由0.15变0.225
             const gift = gifts.create(x, spawnY, giftType);
             gift.setScale(0.225); 
             gift.setVelocityY(100);
